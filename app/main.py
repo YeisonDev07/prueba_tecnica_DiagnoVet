@@ -33,8 +33,8 @@ storage_service = GCPStorageService(
     project_id=settings.gcp_project_id
 )
 
-# Firestore lo activaremos después
-firestore_service = None  # FirestoreService() - activaremos después
+# Inicializar Firestore
+firestore_service = FirestoreService(project_id=settings.gcp_project_id)
 
 
 @app.get("/")
@@ -100,10 +100,25 @@ async def upload_report(file: UploadFile = File(...)):
             image_urls = storage_service.upload_multiple_images(image_paths, report_id)
             print(f"✅ Imágenes disponibles en Cloud Storage")
         
-        # TODO FASE 2: Procesar con Document AI para extraer campos específicos
-        # TODO FASE 2: Guardar en Firestore
+        # FASE 2 (FIRESTORE): Guardar metadata en Firestore
+        report_data = {
+            "id": report_id,
+            "pdf_filename": file.filename,
+            "patient_name": None,  # TODO: Extraer con Document AI
+            "owner_name": None,
+            "veterinarian_name": None,
+            "diagnosis": None,
+            "recommendations": None,
+            "image_urls": image_urls,
+            "upload_date": datetime.utcnow(),
+            "status": "processed"
+        }
         
-        # Por ahora, retornamos respuesta con las URLs reales
+        if firestore_service:
+            firestore_service.save_report(report_data)
+        
+        # TODO FASE 3: Procesar con Document AI para extraer campos específicos
+        
         return UploadResponse(
             report_id=report_id,
             message=f"Reporte procesado. {len(image_paths)} imágenes extraídas y {len(image_urls)} subidas a Cloud Storage."
@@ -122,24 +137,21 @@ async def get_report(report_id: str):
     Consulta Firestore y retorna los datos estructurados con URLs de imágenes.
     """
     try:
-        # TODO FASE 2: Consultar Firestore
-        # Por ahora retornamos datos de ejemplo
+        # Consultar Firestore
+        if firestore_service:
+            report_data = firestore_service.get_report(report_id)
+            
+            if report_data:
+                # Convertir a modelo Pydantic
+                return VeterinaryReport(**report_data)
         
-        # Simulación de datos
-        return VeterinaryReport(
-            id=report_id,
-            patient_name="Max (ejemplo local)",
-            owner_name="Juan Pérez (ejemplo)",
-            veterinarian_name="Dr. García (ejemplo)",
-            diagnosis="Pendiente de procesamiento con Document AI",
-            recommendations="En desarrollo",
-            image_urls=[],
-            pdf_filename="ejemplo.pdf",
-            upload_date=datetime.utcnow()
-        )
+        # Si no se encuentra, error 404
+        raise HTTPException(status_code=404, detail=f"Reporte '{report_id}' no encontrado")
         
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=404, detail=f"Reporte no encontrado: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error obteniendo reporte: {str(e)}")
 
 
 @app.get("/reports")
@@ -148,11 +160,21 @@ async def list_reports():
     Lista todos los reportes disponibles.
     Útil para debugging y demostración.
     """
-    # TODO FASE 2: Consultar todos los documentos de Firestore
-    return {
-        "message": "Endpoint en desarrollo",
-        "total_reports": 0
-    }
+    try:
+        if firestore_service:
+            reports = firestore_service.list_reports()
+            return {
+                "total_reports": len(reports),
+                "reports": reports
+            }
+        
+        return {
+            "message": "Firestore no inicializado",
+            "total_reports": 0
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error listando reportes: {str(e)}")
 
 
 if __name__ == "__main__":
