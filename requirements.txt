@@ -1,0 +1,19 @@
+# Framework para crear la API REST
+fastapi==0.115.0
+uvicorn[standard]==0.32.0  # Servidor web para FastAPI
+
+# Procesamiento de PDFs
+PyPDF2==3.0.1              # Extrae texto e imágenes de PDFs
+pdf2image==1.17.0          # Convierte páginas PDF a imágenes
+python-multipart==0.0.9    # Para recibir archivos en FastAPI
+
+# Google Cloud Platform
+google-cloud-storage==2.18.2      # Para subir/descargar archivos de Cloud Storage
+google-cloud-firestore==2.19.0    # Base de datos NoSQL
+google-cloud-documentai==2.30.0   # OCR/AI para procesar PDFs
+
+# Utilidades
+python-dotenv==1.0.1       # Para leer variables de entorno desde .env
+Pillow==10.4.0             # Manipulación de imágenes
+pydantic==2.8.2            # Validación de datos (versión compatible sin Rust)
+pydantic-settings==2.3.4   # Configuración con Pydantic

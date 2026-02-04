@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+dist/
+*.egg-info/
+
+# Archivos locales temporales
+uploads/*
+!uploads/.gitkeep
+extracted_images/*
+!extracted_images/.gitkeep
+
+# Credenciales y configuración sensible
+.env
+*.json
+!package*.json
+credentials/
+service-account-*.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Sistema
+.DS_Store
+Thumbs.db
