@@ -24,10 +24,16 @@ app = FastAPI(
 # Cargar configuración
 settings = get_settings()
 
-# Inicializar servicios (solo si no estamos en modo local sin GCP)
-# Por ahora los dejamos como None para desarrollo local
+# Inicializar servicios
 pdf_processor = PDFProcessor()
-storage_service = None  # GCPStorageService() - activaremos después
+
+# Inicializar Cloud Storage con el nombre del bucket y project_id configurado
+storage_service = GCPStorageService(
+    bucket_name=settings.gcs_bucket_name,
+    project_id=settings.gcp_project_id
+)
+
+# Firestore lo activaremos después
 firestore_service = None  # FirestoreService() - activaremos después
 
 
@@ -87,14 +93,20 @@ async def upload_report(file: UploadFile = File(...)):
         image_paths = pdf_processor.extract_images(pdf_path, report_id)
         print(f"🖼️  Imágenes extraídas: {len(image_paths)}")
         
-        # TODO FASE 2: Subir imágenes a Cloud Storage
+        # FASE 2 (CLOUD): Subir imágenes a Cloud Storage
+        image_urls = []
+        if storage_service and len(image_paths) > 0:
+            print(f"☁️  Subiendo {len(image_paths)} imágenes a Cloud Storage...")
+            image_urls = storage_service.upload_multiple_images(image_paths, report_id)
+            print(f"✅ Imágenes disponibles en Cloud Storage")
+        
         # TODO FASE 2: Procesar con Document AI para extraer campos específicos
         # TODO FASE 2: Guardar en Firestore
         
-        # Por ahora, retornamos respuesta básica
+        # Por ahora, retornamos respuesta con las URLs reales
         return UploadResponse(
             report_id=report_id,
-            message=f"Reporte procesado localmente. {len(image_paths)} imágenes extraídas."
+            message=f"Reporte procesado. {len(image_paths)} imágenes extraídas y {len(image_urls)} subidas a Cloud Storage."
         )
         
     except Exception as e:

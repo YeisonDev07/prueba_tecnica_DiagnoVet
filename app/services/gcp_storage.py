@@ -4,6 +4,7 @@ Maneja la subida y descarga de archivos (imágenes).
 """
 from typing import List
 import os
+from google.cloud import storage
 
 
 class GCPStorageService:
@@ -12,22 +13,23 @@ class GCPStorageService:
     
     Cloud Storage es como "Google Drive para aplicaciones".
     Aquí guardaremos las imágenes extraídas de los PDFs.
-    
-    TODO FASE 2: Implementar conexión real con GCP
     """
     
-    def __init__(self, bucket_name: str = "diagnovet-reports-images"):
+    def __init__(self, bucket_name: str = "diagnovet-reports-images", project_id: str = None):
         """
         Inicializa el servicio de Storage.
         
         Args:
             bucket_name: Nombre del "contenedor" donde guardaremos archivos
+            project_id: ID del proyecto de GCP
         """
         self.bucket_name = bucket_name
-        # TODO FASE 2: Inicializar cliente de Storage
-        # from google.cloud import storage
-        # self.client = storage.Client()
-        # self.bucket = self.client.bucket(bucket_name)
+        
+        # Inicializar cliente de Storage con el project_id explícito
+        self.client = storage.Client(project=project_id)
+        self.bucket = self.client.bucket(bucket_name)
+        
+        print(f"✅ Cloud Storage inicializado: bucket '{bucket_name}' en proyecto '{project_id}'")
     
     def upload_image(self, local_path: str, destination_blob_name: str) -> str:
         """
@@ -40,19 +42,18 @@ class GCPStorageService:
         Returns:
             str: URL pública de la imagen subida
         """
-        # TODO FASE 2: Implementar subida real
-        """
+        # Crear el blob (objeto en Cloud Storage)
         blob = self.bucket.blob(destination_blob_name)
+        
+        # Subir el archivo
         blob.upload_from_filename(local_path)
         
-        # Hacer el archivo público (para este challenge, las imágenes serán públicas)
-        blob.make_public()
+        # No llamamos make_public() porque el bucket tiene Uniform Access habilitado
+        # La URL pública funciona si el bucket está configurado como público
+        
+        print(f"  ☁️  Imagen subida: {destination_blob_name}")
         
         return blob.public_url
-        """
-        
-        # Por ahora, simulamos la URL
-        return f"https://storage.googleapis.com/{self.bucket_name}/{destination_blob_name}"
     
     def upload_multiple_images(self, image_paths: List[str], report_id: str) -> List[str]:
         """
@@ -88,10 +89,11 @@ class GCPStorageService:
         Returns:
             bool: True si se eliminó correctamente
         """
-        # TODO FASE 2: Implementar eliminación
-        """
-        blob = self.bucket.blob(blob_name)
-        blob.delete()
-        return True
-        """
-        return False
+        try:
+            blob = self.bucket.blob(blob_name)
+            blob.delete()
+            print(f"  🗑️  Imagen eliminada: {blob_name}")
+            return True
+        except Exception as e:
+            print(f"  ⚠️  Error eliminando imagen: {e}")
+            return False

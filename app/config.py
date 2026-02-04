@@ -13,13 +13,13 @@ class Settings(BaseSettings):
     """
     
     # Google Cloud Platform
-    gcp_project_id: str = "diagnovet-challenge"
+    gcp_project_id: str = "diagnovet-challenge"  # Cámbialo por tu PROJECT_ID real
     gcp_location: str = "us"
     gcp_processor_id: str = ""  # Lo configuraremos después
-    gcs_bucket_name: str = "diagnovet-reports-images"
+    gcs_bucket_name: str = "diagnovet-reports-images"  # Cámbialo por el nombre de tu bucket
     
-    # Credenciales (ruta al archivo JSON de la cuenta de servicio)
-    google_application_credentials: str = "./credentials/service-account.json"
+    # Credenciales: usaremos Application Default Credentials (no necesita archivo JSON)
+    google_application_credentials: str = ""  # Vacío = usa ADC automáticamente
     
     # Configuración de la aplicación
     environment: str = "development"
