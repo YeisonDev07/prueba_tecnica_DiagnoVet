@@ -100,15 +100,37 @@ async def upload_report(file: UploadFile = File(...)):
             image_urls = storage_service.upload_multiple_images(image_paths, report_id)
             print(f"✅ Imágenes disponibles en Cloud Storage")
         
+        # FASE 3 (DOCUMENT AI): Extraer campos específicos del PDF
+        extracted_fields = {}
+        try:
+            if settings.gcp_processor_id:
+                print(f"🤖 Extrayendo campos con Document AI...")
+                extracted_fields = pdf_processor.extract_fields_with_document_ai(
+                    pdf_path=pdf_path,
+                    project_id=settings.gcp_project_id,
+                    location=settings.gcp_location,
+                    processor_id=settings.gcp_processor_id
+                )
+                print(f"✅ Campos extraídos por Document AI")
+        except Exception as ai_error:
+            print(f"⚠️  Error en Document AI, continuando sin extracción: {ai_error}")
+            extracted_fields = {
+                "patient_name": None,
+                "owner_name": None,
+                "veterinarian_name": None,
+                "diagnosis": None,
+                "recommendations": None
+            }
+        
         # FASE 2 (FIRESTORE): Guardar metadata en Firestore
         report_data = {
             "id": report_id,
             "pdf_filename": file.filename,
-            "patient_name": None,  # TODO: Extraer con Document AI
-            "owner_name": None,
-            "veterinarian_name": None,
-            "diagnosis": None,
-            "recommendations": None,
+            "patient_name": extracted_fields.get("patient_name"),
+            "owner_name": extracted_fields.get("owner_name"),
+            "veterinarian_name": extracted_fields.get("veterinarian_name"),
+            "diagnosis": extracted_fields.get("diagnosis"),
+            "recommendations": extracted_fields.get("recommendations"),
             "image_urls": image_urls,
             "upload_date": datetime.utcnow(),
             "status": "processed"
@@ -116,8 +138,6 @@ async def upload_report(file: UploadFile = File(...)):
         
         if firestore_service:
             firestore_service.save_report(report_data)
-        
-        # TODO FASE 3: Procesar con Document AI para extraer campos específicos
         
         return UploadResponse(
             report_id=report_id,

@@ -1,34 +1,43 @@
 # 🏥 DiagnoVET - Backend Challenge
 
-API REST para procesamiento automatizado de reportes de ultrasonido veterinario usando Google Cloud Platform.
+API REST para procesamiento automatizado de reportes veterinarios en PDF usando Google Cloud Platform.
 
 ## 📋 Descripción
 
-Este proyecto extrae información estructurada de reportes médicos en PDF, incluyendo:
+Este proyecto procesa reportes médicos veterinarios en PDF, extrayendo imágenes y metadata de forma estructurada.
 
-- ✅ **Extracción de imágenes** del PDF
-- ✅ **Almacenamiento en Cloud Storage** con URLs públicas
-- ✅ **Persistencia en Firestore** con metadata de reportes
-- ⏳ **Datos del paciente** (con Document AI - próximamente)
-- ⏳ **Información del veterinario** (con Document AI - próximamente)
-- ⏳ **Diagnóstico y recomendaciones** (con Document AI - próximamente)
+**Funcionalidades implementadas:**
+
+- ✅ Extracción de imágenes del PDF con PyPDF2
+- ✅ Almacenamiento en Cloud Storage con URLs públicas
+- ✅ Persistencia en Firestore con metadata de reportes
+- ✅ API REST con 3 endpoints (upload, get, list)
+- ✅ Extracción de datos con Document AI OCR Processor
+- ✅ Detección automática de: paciente, propietario, veterinario, diagnóstico
+- ✅ Soporte para múltiples formatos de reportes médicos
+
+**Próximamente:**
+
+- ⏳ Deploy a Cloud Run (serverless)
+- ⏳ Tests automatizados
 
 ## 🏗️ Arquitectura
 
 ```
-Usuario → FastAPI → Cloud Storage + Firestore
-                ↓
-         (Próximamente: Document AI)
+PDF → FastAPI → PyPDF2 (extrae imágenes) → Cloud Storage (almacena)
+              → Document AI (OCR + extracción de campos)
+              → Firestore (metadata + campos extraídos)
+              → JSON con URLs públicas + datos estructurados
 ```
 
 **Stack tecnológico:**
 
-- ✅ **FastAPI**: Framework web Python moderno
-- ✅ **Google Cloud Storage**: Almacenamiento de imágenes
-- ✅ **Firestore**: Base de datos NoSQL
-- ✅ **PyPDF2**: Extracción de imágenes de PDFs
-- ⏳ **Google Document AI**: OCR y extracción inteligente (próximamente)
-- ⏳ **Google Cloud Run**: Hosting serverless (deploy final)
+- **FastAPI** - Framework web Python moderno
+- **PyPDF2** - Extracción de imágenes de PDFs
+- **Google Cloud Storage** - Almacenamiento de imágenes
+- **Firestore** - Base de datos NoSQL
+- **Document AI** ✅ - OCR inteligente con extracción de campos
+- **Cloud Run** ⏳ - Deploy serverless (próximamente)
 
 ## 📊 Estado del Proyecto
 
@@ -51,18 +60,19 @@ Usuario → FastAPI → Cloud Storage + Firestore
 - [x] Colección "reports" con estructura JSON
 - [x] URLs de imágenes almacenadas en metadata
 
-### ⏳ Fase 3: Document AI (Pendiente)
+### ✅ Fase 3: Document AI (Completada)
 
-- [ ] Configurar procesador de Document AI
-- [ ] Extraer campos específicos (paciente, veterinario, diagnóstico)
-- [ ] Actualizar metadata con información extraída
-- [ ] Mejorar precisión de extracción de datos
+- [x] Habilitar Document AI API
+- [x] Crear procesador OCR en región US
+- [x] Implementar extracción de campos con regex optimizado
+- [x] Extraer: paciente, propietario, veterinario, diagnóstico, recomendaciones
+- [x] Testing con múltiples formatos de reportes (Chester, Ramón)
+- [x] Integración completa en endpoint POST /upload-report
 
 ### ⏳ Fase 4: Deploy y Finalización (Pendiente)
 
 - [ ] Deploy a Cloud Run
-- [ ] CI/CD con GitHub Actions
-- [ ] Tests automatizados
+- [ ] Testing en producción
 - [ ] Video demo explicativo (5 min)
 - [ ] Documentación técnica completa
 
@@ -100,37 +110,38 @@ gcloud auth application-default login
 # Configurar proyecto
 gcloud config set project TU_PROJECT_ID
 ```
-Habilitar5: Configurar variables de entorno
+
+### Paso 3: Crear Cloud Storage Bucket
 
 ```bash
-# Editar archivo .env con tus valores
-GCP_PROJECT_ID=tu-proyecto-id
-GCS_BUCKET_NAME=diagnovet-reports-images
-ENVIRONMENT=development
-```
+# Habilitar Cloud Storage API
+gcloud services enable storage.googleapis.com
 
-### Paso 6
-### Paso 5: 
-### Paso 3: Crear Bucket de Cloud Storage
-
-```bash
 # Crear bucket (debe ser único globalmente)
-gsutil mb -p TU_PROJECT_ID gs://diagnovet-reports-images
+gsutil mb -p TU_PROJECT_ID -l us-central1 gs://diagnovet-reports-images
 
 # Hacer el bucket público (para acceso a imágenes)
 gsutil iam ch allUsers:objectViewer gs://diagnovet-reports-images
 ```
 
-### Paso 4: Configurar variables de entorno
+### Paso 4: Configurar Firestore
 
 ```bash
-# Editar archivo .env con tus valores
+# Habilitar Firestore API
+gcloud services enable firestore.googleapis.com
+```
+
+### Paso 5: Configurar variables de entorno
+
+Crea un archivo `.env` en la raíz del proyecto:
+
+```env
 GCP_PROJECT_ID=tu-proyecto-id
 GCS_BUCKET_NAME=diagnovet-reports-images
 ENVIRONMENT=development
 ```
 
-### Paso 5: Ejecutar localmente
+### Paso 6: Ejecutar localmente
 
 ```bash
 # Modo desarrollo con recarga automática
@@ -157,12 +168,22 @@ curl -X POST "http://localhost:8000/upload-report" \
 
 **Request (usando Postman):**
 
-- Method: POST62b7d119",
+- Method: POST
+- URL: `http://localhost:8000/upload-report`
+- Body → form-data
+- Key: `file` (tipo: File)
+- Value: Seleccionar archivo PDF
+
+**Response:**
+
+```json
+{
+  "report_id": "62b7d119",
   "message": "Reporte procesado. 13 imágenes extraídas y 13 subidas a Cloud Storage."
 }
 ```
 
-**Lo que hace:**
+**Flujo de procesamiento:**
 
 1. ✅ Recibe el PDF
 2. ✅ Extrae texto del documento
@@ -177,37 +198,27 @@ Obtiene la información estructurada de un reporte.
 
 **Estado:** Funcionando completamente
 
-**Responsea Cloud Storage
-5. ✅ Genera URLs públicas
-6. ⏳ Guarda metadata en Firestore (próximamente)
-
-### ✅ `GET /reports/{report_id}`
-
-Obtiene la información estructurada de un reporte.
-
-**Estado:** Funcionando completamente
-
 **Response:**
 
 ```json
 {
-  "id": "62b7d119",
+  "id": "419616cd",
   "pdf_filename": "Estudio Radiográfico Ramón.pdf",
-  "patient_name": null,
-  "owner_name": null,
-  "veterinarian_name": null,
-  "diagnosis": null,
+  "patient_name": "Ramón",
+  "owner_name": "Simonetti",
+  "veterinarian_name": "Ghersevich Carolina",
+  "diagnosis": "• Depósito de material de radiodensidad mineral en laterales de espacio intervertebral entre vértebras T13-L1. • Patrón pulmonar bronquial panlobar moderado...",
   "recommendations": null,
   "image_urls": [
-    "https://storage.googleapis.com/diagnovet-reports-images/reports/62b7d119/62b7d119_image_2.png",
-    "https://storage.googleapis.com/diagnovet-reports-images/reports/62b7d119/62b7d119_image_3.jpg"
+    "https://storage.googleapis.com/diagnovet-reports-images/reports/419616cd/419616cd_image_2.png",
+    "https://storage.googleapis.com/diagnovet-reports-images/reports/419616cd/419616cd_image_3.jpg"
   ],
-  "upload_date": "2026-02-04T20:15:30.123456",
+  "upload_date": "2026-02-06T00:45:12.123456",
   "status": "processed"
 }
 ```
 
-**Nota:** Los campos `patient_name`, `diagnosis`, etc. son `null` porque aún no se implementa Document AI para extracción inteligente.
+**Nota:** Los campos se extraen automáticamente con Document AI. Si algún campo es `null`, significa que no se detectó en el PDF.
 
 ### ✅ `GET /reports`
 
@@ -224,11 +235,7 @@ Lista todos los reportes disponibles.
     {
       "id": "62b7d119",
       "pdf_filename": "Estudio Radiográfico Ramón.pdf",
-      "image_urls": [...],
-  Firestore: https://console.cloud.google.com/firestore/databases/-default-/data/panel/reports
-- Deberías ver:
-  - Carpeta con el `report_id` en Cloud Storage con todas las imágenes
-  - Documento en Firestore con metadata completa y URLs de imágenes
+      "image_urls": [...]
     },
     ...
   ]
@@ -298,7 +305,10 @@ diagnovet-challenge/
 
 - ✅ Validación automática de datos con Pydantic
 - ✅ Documentación interactiva automática (Swagger)
-- ✅ ¿Por qué Firestore?
+- ✅ Alto rendimiento (async/await)
+- ✅ Type hints nativos para mejor desarrollo
+
+### ¿Por qué Firestore?
 
 - ✅ NoSQL flexible (ideal para datos semi-estructurados)
 - ✅ Consultas en tiempo real
@@ -311,22 +321,23 @@ diagnovet-challenge/
 
 **Colección:** `reports`  
 **Estructura de documento:**
+
 ```json
 {
   "id": "62b7d119",
   "pdf_filename": "reporte.pdf",
-  "patient_name": null,  // Se llenará con Document AI
+  "patient_name": null,
   "owner_name": null,
   "veterinarian_name": null,
-  "diagno3: Document AI (Próximo objetivo)
+  "diagnosis": null,
+  "recommendations": null,
+  "image_urls": ["https://storage.googleapis.com/..."],
+  "upload_date": "2026-02-04T20:15:30.123456",
+  "status": "processed"
+}
+```
 
-- [ ] Habilitar Document AI API
-- [ ] Configurar procesador de formularios
-- [ ] Implementar extracción de campos específicos
-- [ ] Actualizar reportes con datos extraídos
-- [ ] Validar precisión de extracción
-
-### Fase 4or uso (muy económico)
+**Nota:** Los campos `patient_name`, `diagnosis`, etc. se llenarán con Document AI en la Fase 3.
 
 ### ¿Por qué PyPDF2 para extracción local?
 
@@ -342,49 +353,23 @@ diagnovet-challenge/
 - ✅ Funciona igual en local y en Cloud Run
 - ✅ Recomendado por Google Cloud
 
-### Próximas decisiones (Firestore vs Cloud SQL)
-
-**Elegiremos Firestore porque:**
-
-- NoSQL flexible (ideal para datos semi-estructurados)
-- Consultas en tiempo real
-- Escalabilidad automática
-- Setup más rápido (sin esquemas)
-
-### Próximas decisiones (Document AI)
-
-**Para extracción inteligente de campos:**
-
-- OCR avanzado con ML
-- Extracción de entidades específicas
-- Soporta documentos médicos complejos
-- Mejor precisión que OCR tradicional
-
 ## 📝 Próximos Pasos
 
-### Fase 2: Firestore + Document AI (En progreso)
+### Fase 3: Document AI
 
-- [ ] Activar Firestore en GCP
-- [ ] Implementar FirestoreService completo
-- [ ] Configurar Document AI processor
-- [ ] Extraer campos específicos (paciente, diagnóstico, etc.)
-- [ ] Guardar metadata en Firestore
-- [ ] Actualizar GET /reports/{id} con datos reales
+- [ ] Habilitar Document AI API
+- [ ] Configurar procesador de formularios
+- [ ] Implementar extracción de campos específicos
+- [ ] Actualizar reportes con datos extraídos
+- [ ] Validar precisión de extracción
 
-### Fase 3: Deploy y Optimización
+### Fase 4: Deploy y Optimización
 
 - [ ] Crear Dockerfile optimizado
 - [ ] Deploy a Cloud Run
 - [ ] Configurar CI/CD con GitHub Actions
 - [ ] Tests automatizados
 - [ ] Monitoreo con Cloud Logging
-
-### Fase 4: Documentación Final
-
-- [ ] Video demo (5 min)
-- [ ] Explicación de arquitectura
-- [ ] Decisiones técnicas justificadas
-- [ ] README completo
 
 ## 🔒 Seguridad Implementada
 

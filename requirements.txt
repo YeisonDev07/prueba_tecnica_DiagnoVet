@@ -4,8 +4,7 @@ uvicorn[standard]==0.32.0  # Servidor web para FastAPI
 
 # Procesamiento de PDFs
 PyPDF2==3.0.1              # Extrae texto e imágenes de PDFs
-pdf2image==1.17.0          # Convierte páginas PDF a imágenes
-python-multipart==0.0.9    # Para recibir archivos en FastAPI
+python-multipart==0.0.12   # Para recibir archivos en FastAPI
 
 # Google Cloud Platform
 google-cloud-storage==2.18.2      # Para subir/descargar archivos de Cloud Storage
