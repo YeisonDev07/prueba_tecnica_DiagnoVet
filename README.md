@@ -16,9 +16,14 @@ Este proyecto procesa reportes médicos veterinarios en PDF, extrayendo imágene
 - ✅ Detección automática de: paciente, propietario, veterinario, diagnóstico
 - ✅ Soporte para múltiples formatos de reportes médicos
 
+**Deployed:**
+
+- ✅ API en producción: https://diagnovet-api-963314882832.us-central1.run.app
+- ✅ Autenticación configurada con Application Default Credentials
+- ✅ Serverless en Cloud Run (auto-scaling)
+
 **Próximamente:**
 
-- ⏳ Deploy a Cloud Run (serverless)
 - ⏳ Tests automatizados
 
 ## 🏗️ Arquitectura
@@ -69,12 +74,19 @@ PDF → FastAPI → PyPDF2 (extrae imágenes) → Cloud Storage (almacena)
 - [x] Testing con múltiples formatos de reportes (Chester, Ramón)
 - [x] Integración completa en endpoint POST /upload-report
 
-### ⏳ Fase 4: Deploy y Finalización (Pendiente)
+### ✅ Fase 4: Deploy a Cloud Run (Completada)
 
-- [ ] Deploy a Cloud Run
-- [ ] Testing en producción
+- [x] Deploy a Cloud Run con Dockerfile optimizado
+- [x] Configurar variables de entorno (GCP_PROJECT_ID, GCP_PROCESSOR_ID, etc)
+- [x] Permisos IAM (Artifact Registry, Firestore, Cloud Storage, Document AI)
+- [x] Testing básico en producción (endpoints funcionando)
+- [x] URL pública: https://diagnovet-api-963314882832.us-central1.run.app
+
+### ⏳ Fase 5: Finalización (Pendiente)
+
+- [ ] Testing completo en producción (upload PDF end-to-end)
 - [ ] Video demo explicativo (5 min)
-- [ ] Documentación técnica completa
+- [ ] Documentación técnica final
 
 ## 🚀 Instalación y Configuración
 
@@ -225,6 +237,16 @@ Obtiene la información estructurada de un reporte.
 Lista todos los reportes disponibles.
 
 **Estado:** Funcionando completamente
+
+**Request:**
+
+```bash
+# Local
+curl -X GET http://localhost:8000/reports
+
+# Producción
+curl -X GET https://diagnovet-api-963314882832.us-central1.run.app/reports
+```
 
 **Response:**
 
